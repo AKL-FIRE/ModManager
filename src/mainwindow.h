@@ -51,6 +51,7 @@ class MainWindow : public QWidget {
   std::unique_ptr<QDir> mod_dir_;
   std::unique_ptr<QPixmap> picture_;
   std::unique_ptr<Recorder> recorder_;
+  QString executable_path_;
 
 
   void InitModItem(QStandardItemModel *p_model);
@@ -58,6 +59,7 @@ class MainWindow : public QWidget {
   QStringList GetAllFilePath(const QString &q_string);
   void GetAllFilePath_(const QDir &q_string, QStringList& list);
   void ReplaceFiles(const QStringList &list, QStandardItem *p_item, int mode);
+  void InitialWD();
 };
 
 #endif //RYZAMODMANAGER__MAINWINDOW_H_

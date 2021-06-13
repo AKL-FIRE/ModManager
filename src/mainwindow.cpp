@@ -9,7 +9,7 @@
 
 #include <filesystem>
 #include <fstream>
-
+#include <QMessageBox>
 
 MainWindow::MainWindow(QWidget *parent) :
 	QWidget(parent), ui(new Ui::MainWindow) {
@@ -18,6 +18,7 @@ MainWindow::MainWindow(QWidget *parent) :
   this->setWindowTitle("RyzaModManager");
   this->resize(1920, 1080);
   connect(ui->openPushButton, SIGNAL(clicked()), this, SLOT(ClickOpenButton()));
+  InitialWD();
   InitialModList();
   connect(ui->modLists, SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(slotContextMenu(QPoint)));
 }
@@ -129,6 +130,7 @@ void MainWindow::ShowImage() {
 void MainWindow::InstallMod() {
   if (working_directory_.isEmpty()) {
     qDebug() << "没有选择文件夹";
+    auto message_box = QMessageBox::critical(this, "错误", "请先选择游戏目录");
 	return;
   }
   // 获取当前选中的mod
@@ -156,6 +158,7 @@ void MainWindow::InstallMod() {
 void MainWindow::DeleteMod() {
   if (working_directory_.isEmpty()) {
 	qDebug() << "没有选择文件夹";
+	auto message_box = QMessageBox::critical(this, "错误", "请先选择游戏目录");
 	return;
   }
   // 获取当前选中的mod
@@ -227,6 +230,25 @@ void MainWindow::ReplaceFiles(const QStringList &list, QStandardItem *p_item, in
       std::filesystem::rename(to, from);
     }
   }
+}
+
+void MainWindow::InitialWD() {
+  auto path = QDir::currentPath();
+  QDir path_dir = QDir(path);
+  if (path_dir.isEmpty()) {
+    qDebug() << "当前目录不是游戏根目录, 请手动选择";
+    auto message_box = QMessageBox::warning(this, "警告", "当前目录不是游戏根目录, 请手动选择");
+	return;
+  }
+  auto lists = path_dir.entryInfoList(QDir::Filters {QDir::Filter::Files | QDir::Filter::Executable});
+  if (lists.isEmpty()) {
+	qDebug() << "当前目录不是游戏根目录, 请手动选择";
+	auto message_box = QMessageBox::warning(this, "警告", "当前目录不是游戏根目录, 请手动选择");
+	return;
+  }
+  executable_path_ = lists[0].absoluteFilePath();
+  ui->directoryRoot->setText(executable_path_);
+  qDebug() << "检测到游戏运行文件： " << executable_path_;
 }
 
 
