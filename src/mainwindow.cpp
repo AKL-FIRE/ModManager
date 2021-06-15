@@ -145,12 +145,15 @@ void MainWindow::InstallMod() {
 	  QString base_path = temp_path.absolutePath();
 	  auto file_path_vec = GetAllFilePath(base_path);
 	  // 替换并备份文件
-	  ReplaceFiles(file_path_vec, mod_name, 0);
+	  bool success;
+	  auto file_names = ReplaceFiles(file_path_vec, mod_name, 0, success);
 	  // 记录替换信息
-	  recorder_->Save(mod_name->text().toStdString());
-	  // 更新ui
-	  auto mod_status = q_standard_item_model_->item(mod_item_index.row(), 1);
-	  mod_status->setText("已安装");
+	  if (success) {
+		recorder_->Save(mod_name->text().toStdString(), file_names);
+		// 更新ui
+		auto mod_status = q_standard_item_model_->item(mod_item_index.row(), 1);
+		mod_status->setText("已安装");
+	  }
 	}
   }
 }
@@ -172,12 +175,15 @@ void MainWindow::DeleteMod() {
 	  QString base_path = temp_path.absolutePath();
 	  auto file_path_vec = GetAllFilePath(base_path);
 	  // 恢复原版文件
-	  ReplaceFiles(file_path_vec, mod_name, 1);
-	  // 删除替换信息
-	  recorder_->Delete(mod_name->text().toStdString());
-	  // 更新ui
-	  auto mod_status = q_standard_item_model_->item(mod_item_index.row(), 1);
-	  mod_status->setText("");
+	  bool success;
+	  ReplaceFiles(file_path_vec, mod_name, 1, success);
+	  if (success) {
+		// 删除替换信息
+		recorder_->Delete(mod_name->text().toStdString());
+		// 更新ui
+		auto mod_status = q_standard_item_model_->item(mod_item_index.row(), 1);
+		mod_status->setText("");
+	  }
 	}
   }
 }
@@ -207,14 +213,19 @@ void MainWindow::GetAllFilePath_(const QDir &q_dir, QStringList& list) {
 
 // mode 0: install
 // mode 1: uninstall
-void MainWindow::ReplaceFiles(const QStringList &list, QStandardItem *p_item, int mode) {
+std::vector<std::string> MainWindow::ReplaceFiles(const QStringList &list, QStandardItem *p_item, int mode, bool& result) {
+  result = true;
+  std::vector<std::string> file_names;
   if (working_directory_.isEmpty()) {
     qDebug() << "没有选择文件夹";
+    result = false;
+	return file_names;
   }
   for (const auto& file : list) {
     // 获得相对路径
     auto relative_path = file.split(p_item->text())[1];
     relative_path.remove(0, 1);
+    file_names.push_back(relative_path.toStdString());
     // qDebug() << relative_path;
     auto target_file = QDir(working_directory_).filePath(relative_path).toStdString();
     std::cout << target_file << std::endl;
@@ -222,14 +233,20 @@ void MainWindow::ReplaceFiles(const QStringList &list, QStandardItem *p_item, in
     std::string to_s {from.filename().string() + "_origin"};
     std::filesystem::path to(from.parent_path() / to_s);
     // std::cout << "from: " << from.string() << "to: " << to.string() << std::endl;
-    if (mode == 0) {
-	  std::filesystem::rename(from, to);
-	  // 把mod文件复制过来
-	  std::filesystem::copy_file(file.toStdString(), from);
-	} else if (mode == 1) {
-      std::filesystem::rename(to, from);
-    }
+	try {
+	  if (mode == 0) {
+		std::filesystem::rename(from, to);
+		// 把mod文件复制过来
+		std::filesystem::copy_file(file.toStdString(), from);
+	  } else if (mode == 1) {
+		std::filesystem::rename(to, from);
+	  }
+	} catch (std::filesystem::filesystem_error& e) {
+	  auto message = QMessageBox::critical(this, "错误", "目标文件不存在");
+	  result = false;
+	}
   }
+  return file_names;
 }
 
 void MainWindow::InitialWD() {

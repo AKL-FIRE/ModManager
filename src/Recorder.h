@@ -9,20 +9,21 @@
 #include <vector>
 #include <filesystem>
 #include <algorithm>
+#include <strstream>
 
 class Recorder {
  public:
   explicit Recorder(const std::string& path);
   ~Recorder();
-  void Save(const std::string& mod_name);
+  void Save(const std::string& mod_name, const std::vector<std::string>& file_names);
   void Load(const std::string& log_path);
   void Delete(const std::string& mod_name);
   void SaveToFile();
 
-  const std::vector<std::string>& getLog() const;
+  const std::vector<std::pair<std::string, std::vector<std::string>>>& getLog() const;
   bool contain(const std::string& mod_name) const;
  private:
-  std::vector<std::string> log_;
+  std::vector<std::pair<std::string, std::vector<std::string>>> log_;
   std::filesystem::path log_path_;
 };
 

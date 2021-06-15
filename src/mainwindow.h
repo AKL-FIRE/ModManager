@@ -58,7 +58,7 @@ class MainWindow : public QWidget {
   void InitialModList();
   QStringList GetAllFilePath(const QString &q_string);
   void GetAllFilePath_(const QDir &q_string, QStringList& list);
-  void ReplaceFiles(const QStringList &list, QStandardItem *p_item, int mode);
+  std::vector<std::string> ReplaceFiles(const QStringList &list, QStandardItem *p_item, int mode, bool& result);
   void InitialWD();
 };
 
