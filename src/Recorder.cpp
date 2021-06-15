@@ -81,3 +81,14 @@ Recorder::~Recorder() {
   SaveToFile();
 }
 
+bool Recorder::ExistModFile(const std::string &str) {
+  for (const auto & log : log_) {
+    if (std::find_if(log.second.cbegin(), log.second.cend(), [&str](const auto& e) {
+	  return e == str;
+    }) != log.second.cend()) {
+	  return true;
+    }
+  }
+  return false;
+}
+

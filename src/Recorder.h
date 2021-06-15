@@ -19,6 +19,7 @@ class Recorder {
   void Load(const std::string& log_path);
   void Delete(const std::string& mod_name);
   void SaveToFile();
+  bool ExistModFile(const std::string& str);
 
   const std::vector<std::pair<std::string, std::vector<std::string>>>& getLog() const;
   bool contain(const std::string& mod_name) const;

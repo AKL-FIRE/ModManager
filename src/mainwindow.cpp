@@ -144,6 +144,11 @@ void MainWindow::InstallMod() {
 	  // 成功打开
 	  QString base_path = temp_path.absolutePath();
 	  auto file_path_vec = GetAllFilePath(base_path);
+	  // 检查冲突
+	  if (CheckConflict(file_path_vec)) {
+	    auto mes = QMessageBox::critical(this, "错误", "目标文件已经被替换过");
+		return;
+	  }
 	  // 替换并备份文件
 	  bool success;
 	  auto file_names = ReplaceFiles(file_path_vec, mod_name, 0, success);
@@ -266,6 +271,18 @@ void MainWindow::InitialWD() {
   executable_path_ = lists[0].absoluteFilePath();
   ui->directoryRoot->setText(executable_path_);
   qDebug() << "检测到游戏运行文件： " << executable_path_;
+}
+
+bool MainWindow::CheckConflict(const QStringList &list) {
+  for (const auto& file : list) {
+	// 获得相对路径
+	auto relative_path = file.split("Data")[1];
+	relative_path.push_front("Data");
+	qDebug() << relative_path;
+	if (recorder_->ExistModFile(relative_path.toStdString()))
+	  return true;
+  }
+  return false;
 }
 
 
