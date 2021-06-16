@@ -7,13 +7,14 @@
 
 #include <fstream>
 #include <vector>
-#include <filesystem>
 #include <algorithm>
 #include <strstream>
 
+#include <QDir>
+
 class Recorder {
  public:
-  explicit Recorder(const std::string& path);
+  explicit Recorder(const QString& path);
   ~Recorder();
   void Save(const std::string& mod_name, const std::vector<std::string>& file_names);
   void Load(const std::string& log_path);
@@ -25,7 +26,7 @@ class Recorder {
   bool contain(const std::string& mod_name) const;
  private:
   std::vector<std::pair<std::string, std::vector<std::string>>> log_;
-  std::filesystem::path log_path_;
+  QDir log_path_;
 };
 
 #endif //RYZAMODMANAGER_SRC_RECORDER_H_

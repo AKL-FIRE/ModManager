@@ -38,11 +38,11 @@ void Recorder::Load(const std::string &log_path) {
   }
 }
 
-Recorder::Recorder(const std::string& path) {
-  std::filesystem::path p(path);
-  p /= "log.txt";
-  log_path_ = p;
-  Load(log_path_);
+Recorder::Recorder(const QString& path) {
+  QDir p {path};
+  auto temp = p.filePath("log.txt");
+  log_path_.setPath(temp);
+  Load(log_path_.absolutePath().toStdString());
 }
 
 const std::vector<std::pair<std::string, std::vector<std::string>>>& Recorder::getLog() const {
@@ -65,7 +65,7 @@ void Recorder::Delete(const std::string &mod_name) {
 }
 
 void Recorder::SaveToFile() {
-  std::fstream file(log_path_, std::ios_base::in | std::ios_base::out | std::ios_base::trunc);
+  std::fstream file(log_path_.absolutePath().toStdString(), std::ios_base::in | std::ios_base::out | std::ios_base::trunc);
   if (file.is_open()) {
 	for (const auto& row : log_) {
 	  file << row.first << ' ';

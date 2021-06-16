@@ -17,6 +17,7 @@
 #include <QPushButton>
 #include <QDebug>
 #include <QItemSelectionModel>
+#include <QProcess>
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -40,6 +41,8 @@ class MainWindow : public QWidget {
   void InstallMod();
   // 卸载mod
   void DeleteMod();
+  // 开始游戏
+  void Play();
 
  private:
   Ui::MainWindow *ui;

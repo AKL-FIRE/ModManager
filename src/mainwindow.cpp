@@ -7,7 +7,6 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 
-#include <filesystem>
 #include <fstream>
 #include <QMessageBox>
 
@@ -16,16 +15,17 @@ MainWindow::MainWindow(QWidget *parent) :
   ui->setupUi(this);
 
   this->setWindowTitle("RyzaModManager");
-  this->resize(1920, 1080);
+  this->resize(1536, 864);
   connect(ui->openPushButton, SIGNAL(clicked()), this, SLOT(ClickOpenButton()));
   InitialWD();
   InitialModList();
   connect(ui->modLists, SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(slotContextMenu(QPoint)));
+  connect(ui->playPushButton, SIGNAL(clicked(bool)), this, SLOT(Play()));
 }
 
 void MainWindow::InitialModList() {// 初始化mod列表
   // 初始化记录器
-  recorder_ = std::make_unique<Recorder>(QDir::currentPath().toStdString());
+  recorder_ = std::make_unique<Recorder>(QDir::currentPath());
   /* 创建数据模型 */
   q_standard_item_model_ = new QStandardItemModel(this);
   q_item_selection_model_ = new QItemSelectionModel(q_standard_item_model_);
@@ -68,7 +68,7 @@ void MainWindow::ClickOpenButton() {
   // 创建一个打开文件对话框
   auto directory_name = QFileDialog::getExistingDirectory(this);
   if (!directory_name.isEmpty()) {
-    std::cout << "Open directory: \"" << directory_name.toStdString() << "\" successful." << std::endl;
+    // std::cout << "Open directory: \"" << directory_name.toStdString() << "\" successful." << std::endl;
     working_directory_ = directory_name;
     // 更新显示框内容为路径
     ui->directoryRoot->setText(working_directory_);
@@ -114,7 +114,7 @@ void MainWindow::ShowImage() {
 	if(temp_path.cd(mod_name->text())) {
 	  // 成功打开
 	  auto list = temp_path.entryList();
-	  auto filtered = list.filter(QRegExp("\.(jpg|gif|png)$"));
+	  auto filtered = list.filter(QRegExp("\\.(jpg|gif|png)$"));
 	  if (!filtered.empty()) {
 	    auto img_name = filtered[0];
 	    // 显示图片
@@ -230,26 +230,74 @@ std::vector<std::string> MainWindow::ReplaceFiles(const QStringList &list, QStan
     // 获得相对路径
     auto relative_path = file.split(p_item->text())[1];
     relative_path.remove(0, 1);
+    // std::cout << relative_path.toStdString() << std::endl;
     file_names.push_back(relative_path.toStdString());
     // qDebug() << relative_path;
-    auto target_file = QDir(working_directory_).filePath(relative_path).toStdString();
-    std::cout << target_file << std::endl;
-    std::filesystem::path from(target_file);
-    std::string to_s {from.filename().string() + "_origin"};
-    std::filesystem::path to(from.parent_path() / to_s);
-    // std::cout << "from: " << from.string() << "to: " << to.string() << std::endl;
-	try {
-	  if (mode == 0) {
-		std::filesystem::rename(from, to);
-		// 把mod文件复制过来
-		std::filesystem::copy_file(file.toStdString(), from);
-	  } else if (mode == 1) {
-		std::filesystem::rename(to, from);
-	  }
-	} catch (std::filesystem::filesystem_error& e) {
-	  auto message = QMessageBox::critical(this, "错误", "目标文件不存在");
-	  result = false;
-	}
+    auto target_file = QDir(working_directory_).filePath(relative_path);
+    QString to {target_file + "_origin"};
+    // std::cout << "from: " << target_file.toStdString() << "\nto: " << to.toStdString() << std::endl;
+    if (mode == 0) {
+      if (!QFile::exists(target_file) && QFile::exists(file)) {
+        // 新添加的文件,把mod文件复制过来
+        QFileInfo file_info {target_file};
+        // std::cout << file_info.absolutePath().toStdString() << std::endl;
+        if (!QDir(working_directory_).mkpath(file_info.absolutePath())) {
+          QMessageBox::critical(this, "错误", "无法创建目录" + file_info.absolutePath());
+          result = false;
+          break;
+        }
+        // 复制文件过来
+        if (!QFile::copy(file, target_file)) {
+          QMessageBox::critical(this, "错误", "无法把文件: " + target_file + "重命名成: " + to);
+          result = false;
+          break;
+        }
+      }
+      else if (QFile::exists(target_file) && QFile::exists(file)) {
+        // 旧文件改名
+        if (!QFile::rename(target_file, to)) {
+          QMessageBox::critical(this, "错误", "无法把文件: " + target_file + "重命名成: " + to);
+          result = false;
+          break;
+        }
+        // 把mod文件复制过来
+        if (!QFile::copy(file, target_file)) {
+          QMessageBox::critical(this, "错误", "无法把文件: " + target_file + "重命名成: " + to);
+          result = false;
+          break;
+        }
+      } else if (!QFile::exists(target_file) || !QFile::exists(file)) {
+        QMessageBox::critical(this, "错误", "文件不存在");
+        result = false;
+        break;
+      }
+    } else if (mode == 1) {
+      if (QFile::exists(target_file) && !QFile::exists(to)) {
+        // 删除现在的文件
+        if (!QFile::remove(target_file)) {
+          QMessageBox::critical(this, "错误", "无法删除文件: " + target_file);
+          result = false;
+          break;
+        }
+      } else if (QFile::exists(target_file) && QFile::exists(to)) {
+        // 删除现在的文件
+        if (!QFile::remove(target_file)) {
+          QMessageBox::critical(this, "错误", "无法删除文件: " + target_file);
+          result = false;
+          break;
+        }
+        // 把备份文件替换成源文件
+        if (!QFile::rename(to, target_file)) {
+          QMessageBox::critical(this, "错误", "无法把文件: " + to + "重命名成: " + target_file);
+          result = false;
+          break;
+        }
+      } else {
+        QMessageBox::critical(this, "错误", "文件不存在");
+        result = false;
+        break;
+      }
+    }
   }
   return file_names;
 }
@@ -283,6 +331,14 @@ bool MainWindow::CheckConflict(const QStringList &list) {
 	  return true;
   }
   return false;
+}
+
+void MainWindow::Play() {
+  if (!executable_path_.isEmpty()) {
+    qDebug() << executable_path_;
+    auto code = QProcess::execute(executable_path_);
+    qDebug() << code;
+  }
 }
 
 
