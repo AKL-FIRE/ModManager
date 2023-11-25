@@ -114,7 +114,7 @@ void MainWindow::ShowImage() {
 	if(temp_path.cd(mod_name->text())) {
 	  // 成功打开
 	  auto list = temp_path.entryList();
-	  auto filtered = list.filter(QRegExp("\\.(jpg|gif|png)$"));
+      auto filtered = list.filter(QRegularExpression("\\.(jpg|gif|png)$"));
 	  if (!filtered.empty()) {
 	    auto img_name = filtered[0];
 	    // 显示图片
@@ -145,7 +145,7 @@ void MainWindow::InstallMod() {
 	  QString base_path = temp_path.absolutePath();
 	  auto file_path_vec = GetAllFilePath(base_path);
 	  // 检查冲突
-	  if (CheckConflict(file_path_vec)) {
+      if (CheckConflict(mod_name->text(), file_path_vec)) {
 	    auto mes = QMessageBox::critical(this, "错误", "目标文件已经被替换过");
 		return;
 	  }
@@ -321,11 +321,15 @@ void MainWindow::InitialWD() {
   qDebug() << "检测到游戏运行文件： " << executable_path_;
 }
 
-bool MainWindow::CheckConflict(const QStringList &list) {
+QString MainWindow::GetModRelativePath(const QString& mod_name, const QString& path) {
+    QString current_mod_path(this->mod_dir_->filePath(mod_name));
+    return QDir(current_mod_path).relativeFilePath(path);
+}
+
+bool MainWindow::CheckConflict(const QString& mod_name, const QStringList &list) {
   for (const auto& file : list) {
 	// 获得相对路径
-	auto relative_path = file.split("Data")[1];
-	relative_path.push_front("Data");
+    auto relative_path = this->GetModRelativePath(mod_name, file);
 	qDebug() << relative_path;
 	if (recorder_->ExistModFile(relative_path.toStdString()))
 	  return true;

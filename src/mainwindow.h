@@ -62,8 +62,9 @@ class MainWindow : public QWidget {
   QStringList GetAllFilePath(const QString &q_string);
   void GetAllFilePath_(const QDir &q_string, QStringList& list);
   std::vector<std::string> ReplaceFiles(const QStringList &list, QStandardItem *p_item, int mode, bool& result);
-  bool CheckConflict(const QStringList& list);
+  bool CheckConflict(const QString& mod_name, const QStringList& list);
   void InitialWD();
+  QString GetModRelativePath(const QString& mod_name, const QString& path);
 };
 
 #endif //RYZAMODMANAGER__MAINWINDOW_H_
